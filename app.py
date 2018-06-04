@@ -1,9 +1,9 @@
 #!flask/bin/python
 from flask import Flask, jsonify, request as req
 from models import models
-import uuid, json
-from bson import json_util
-import requests
+from faker import Faker
+import uuid
+
 from database import mongodb;
 
 app = Flask(__name__)
@@ -26,12 +26,12 @@ def address():
     r.headers['content-type'],
     )
 '''
-@app.route('/unga/api/v1.0/adverts/<int:advert_id>', methods=['GET'])
-def get_advert(advert_id):
+@app.route('/unga/api/v1.0/adverts/<advert_uuid>', methods=['GET'])
+def get_advert(advert_uuid):
     output = []
     mongoConnect = mongodb.MongoDb()
     db = mongoConnect.getClient().unga
-    advert = db.adverts.find({"id": advert_id})
+    advert = db.adverts.find({"id": advert_uuid})
 
     for ad in advert:
         output.append({'id': ad['id'], 'message': ad['message']})
@@ -52,12 +52,13 @@ def get_adverts():
 
 @app.route('/unga/api/v1.0/dummy', methods=['GET'])
 def create_dummy_data():
+    fake = Faker()
     adverts = []
     mongoConnect = mongodb.MongoDb()
     db = mongoConnect.getClient().unga
 
     for i in range(0, 5):
-        advert = models.Advert(i, 'message '+str(uuid.uuid1()))
+        advert = models.Advert(uuid.uuid4(), fake.text())
         db.adverts.insert(advert.serialize())
         adverts.append(advert.serialize())
 
