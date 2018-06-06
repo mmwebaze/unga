@@ -57,16 +57,12 @@ def address():
 '''
 @app.route('/unga/api/v1.0/users/<uid>', methods=['GET'])
 def get_user(uid):
-    output = []
     mongoConnect = mongodb.MongoDb()
     db = mongoConnect.getClient().unga
-    users = db.users.find({"uid": uid})
+    user = db.users.find_one({"uid": uid})
     mongoConnect.getClient().close()
 
-    for user in users:
-        output.append({'first_name': user['first_name'], 'email': user['email'], 'uid' : user['uid']})
-
-    return jsonify(output)
+    return jsonify({'first_name': user['first_name'], 'email': user['email'], 'uid' : user['uid']})
 
 @app.route('/unga/api/v1.0/users', methods=['GET'])
 def get_users():
@@ -107,10 +103,6 @@ def get_rental(rental_id):
     rental = db.rentals.find_one({"id": rental_id})
     mongoConnect.getClient().close()
 
-    #for rental in rentals:
-        #output.append({'id': rental['id'], 'description': rental['description']})
-        #abort(404)
-
     return jsonify({'id': rental['id'], 'type': rental['type'], 'description': rental['description'],
                     'pictures': rental['pictures'], 'published' : rental['published']})
 
@@ -120,14 +112,10 @@ def get_advert(advert_uuid):
     output = []
     mongoConnect = mongodb.MongoDb()
     db = mongoConnect.getClient().unga
-    advert = db.adverts.find({"id": advert_uuid})
+    advert = db.adverts.find_one({"id": advert_uuid})
     mongoConnect.getClient().close()
 
-    for ad in advert:
-        output.append({'id': ad['id'], 'message': ad['message']})
-        #abort(404)
-
-    return jsonify(output)
+    return jsonify({'id': advert['id'], 'message': advert['message']})
 
 @app.route('/unga/api/v1.0/adverts', methods=['GET'])
 def get_adverts():
