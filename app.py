@@ -6,7 +6,7 @@ from security import basicauthentication as bs
 from flask import make_response
 from database import mongodb
 from dummy import data
-from werkzeug.security import check_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 
 
 app = Flask(__name__)
@@ -17,9 +17,16 @@ auth = basicAuth.authenticate()
 
 @auth.verify_password
 def verify_password(username, password):
-    if username in data.users:
+    mongoConnect = mongodb.MongoDb()
+    db = mongoConnect.getClient().unga
+    user = db.users.find_one({'email': username})
 
-        return check_password_hash(data.users.get(username), password)
+    if user:
+        print(user['password'])
+        if check_password_hash(user['password'], password):
+
+            return True
+
     return False
 
 @auth.error_handler
@@ -29,6 +36,7 @@ def unauthorized():
 @app.route('/')
 @auth.login_required
 def index():
+
 
     #user = models.User('Michael', 'Mwebaze', 'mail@example.com')
     return jsonify({"message": "logged in"})
@@ -105,12 +113,14 @@ def create_dummy_data():
     mongoConnect = mongodb.MongoDb()
     db = mongoConnect.getClient().unga
 
+    dummyPasswords = ['admin', 'admin123', 'district', 'district123', '1234']
+
     for i in range(0, 5):
         advert = models.Advert(fake.text())
         db.adverts.insert(advert.serialize())
         dummy.append(advert.serialize())
 
-        user = models.User(fake.name(), fake.email(), fake.email())
+        user = models.User(fake.name(), dummyPasswords[i], fake.email(), generate_password_hash(dummyPasswords[i]))
         db.users.insert(user.serialize())
         dummy.append(user.serialize())
 

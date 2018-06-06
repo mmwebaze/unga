@@ -16,7 +16,7 @@ class User(Model):
     #type_ids = Buy - b, Seller - s, Admin - a'''
     __endpoint = 'users'
 
-    def __init__(self, firstName, lastName, email, telephone = None, typeId = 's'):
+    def __init__(self, firstName, lastName, email, password, telephone = None, typeId = 's'):
         super().__init__()
         self.firstName = firstName
         self.lastName = lastName
@@ -25,6 +25,7 @@ class User(Model):
         self.typeId = typeId
         self.uid = str(uuid.uuid4())
         self.uri = super(User, self).getBaseUri()
+        self.password = password
 
     def getFirstName(self):
 
@@ -62,6 +63,7 @@ class User(Model):
             'first_name': self.firstName,
             'last_name': self.lastName,
             'email': self.email,
+            'password': self.password,
             'uri': self.uri + self.__endpoint + "/" + self.uid
         }
 

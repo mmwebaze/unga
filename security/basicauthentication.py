@@ -9,3 +9,7 @@ class HttpBasicAuth:
 
         return auth
 
+    def verifyCredentials(self, username, password, db):
+
+
+        return []
