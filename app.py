@@ -2,7 +2,6 @@
 from flask import Flask, jsonify, request as req
 from models import models
 from faker import Faker
-import uuid
 from security import basicauthentication as bs
 from flask import make_response
 from database import mongodb
@@ -46,6 +45,35 @@ def address():
     r.headers['content-type'],
     )
 '''
+@app.route('/unga/api/v1.0/users/<uid>', methods=['GET'])
+def get_user(uid):
+    output = []
+    mongoConnect = mongodb.MongoDb()
+    db = mongoConnect.getClient().unga
+    users = db.users.find({"uid": uid})
+
+    for user in users:
+        output.append({'first_name': user['first_name'], 'email': user['email'], 'uid' : user['uid']})
+
+    return jsonify(output)
+
+@app.route('/unga/api/v1.0/users', methods=['GET'])
+def get_users():
+    output = []
+    mongoConnect = mongodb.MongoDb()
+    db = mongoConnect.getClient().unga
+    users = db.users.find()
+
+    for user in users:
+        output.append({
+            'href': user['uri'],
+            'first_name': user['first_name'],
+            'email': user['email'],
+            'uid' : user['uid']
+        })
+
+    return jsonify({'users': output})
+
 @app.route('/unga/api/v1.0/adverts/<advert_uuid>', methods=['GET'])
 def get_advert(advert_uuid):
     output = []
@@ -73,17 +101,23 @@ def get_adverts():
 @app.route('/unga/api/v1.0/dummy', methods=['GET'])
 def create_dummy_data():
     fake = Faker()
-    adverts = []
+    dummy = []
     mongoConnect = mongodb.MongoDb()
     db = mongoConnect.getClient().unga
 
     for i in range(0, 5):
-        advert = models.Advert(uuid.uuid4(), fake.text())
+        advert = models.Advert(fake.text())
         db.adverts.insert(advert.serialize())
-        adverts.append(advert.serialize())
+        dummy.append(advert.serialize())
+
+        user = models.User(fake.name(), fake.email(), fake.email())
+        db.users.insert(user.serialize())
+        dummy.append(user.serialize())
+
+
 
     mongoConnect.getClient().close()
-    return jsonify(adverts)
+    return jsonify(dummy)
 
 if __name__ == '__main__':
     app.run(debug=True)

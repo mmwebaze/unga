@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import uuid
 
 class Model(ABC):
     def __init__(self, baseUri = 'http://127.0.0.1:5000/unga/api/v1.0/'):
@@ -11,15 +12,19 @@ class Model(ABC):
     def serialize(self):
         pass
 
-"""class User(Model):
+class User(Model):
     #type_ids = Buy - b, Seller - s, Admin - a'''
+    __endpoint = 'users'
 
     def __init__(self, firstName, lastName, email, telephone = None, typeId = 's'):
+        super().__init__()
         self.firstName = firstName
         self.lastName = lastName
         self.email = email
         self.telephone = telephone
         self.typeId = typeId
+        self.uid = str(uuid.uuid4())
+        self.uri = super(User, self).getBaseUri()
 
     def getFirstName(self):
 
@@ -53,19 +58,21 @@ class Model(ABC):
     def serialize(self):
 
         return {
+            'uid': self.uid,
             'first_name': self.firstName,
-            'last_name': self.lastName
+            'last_name': self.lastName,
+            'email': self.email,
+            'uri': self.uri + self.__endpoint + "/" + self.uid
         }
-"""
+
 class Advert(Model):
-    endpoint = 'adverts'
-    def __init__(self, advertId, message, promocode = None):
+    __endpoint = 'adverts'
+    def __init__(self, message, promocode = None):
         super().__init__()
-        self.advertId = advertId
+        self.advertId = str(uuid.uuid4())
         self.advertMessage = message
         self.promocode = promocode
         self.uri = super(Advert, self).getBaseUri()
-        #self.uri = super()
 
     def getAdvertId(self):
 
@@ -82,9 +89,9 @@ class Advert(Model):
     def serialize(self):
 
         return {
-            'id': str(self.advertId),
+            'id': self.advertId,
             'message': self.advertMessage,
-            'uri': self.uri+self.endpoint+"/"+str(self.advertId)
+            'uri': self.uri+self.__endpoint+"/"+self.advertId
         }
 
 class Rental(Model):
