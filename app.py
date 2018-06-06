@@ -20,6 +20,7 @@ def verify_password(username, password):
     mongoConnect = mongodb.MongoDb()
     db = mongoConnect.getClient().unga
     user = db.users.find_one({'email': username})
+    mongoConnect.getClient().close()
 
     if user:
         print(user['password'])
@@ -59,6 +60,7 @@ def get_user(uid):
     mongoConnect = mongodb.MongoDb()
     db = mongoConnect.getClient().unga
     users = db.users.find({"uid": uid})
+    mongoConnect.getClient().close()
 
     for user in users:
         output.append({'first_name': user['first_name'], 'email': user['email'], 'uid' : user['uid']})
@@ -71,6 +73,7 @@ def get_users():
     mongoConnect = mongodb.MongoDb()
     db = mongoConnect.getClient().unga
     users = db.users.find()
+    mongoConnect.getClient().close()
 
     for user in users:
         output.append({
@@ -82,12 +85,42 @@ def get_users():
 
     return jsonify({'users': output})
 
+#Rentals endpoints
+@app.route('/unga/api/v1.0/rentals', methods=['GET'])
+def get_rentals():
+    output = []
+    mongoConnect = mongodb.MongoDb()
+    db = mongoConnect.getClient().unga
+    rentals = db.rentals.find()
+    mongoConnect.getClient().close()
+
+    for rental in rentals:
+        output.append({'id': rental['id'], 'message': rental['message']})
+    return jsonify(output)
+
+@app.route('/unga/api/v1.0/rentals/<rental_id>', methods=['GET'])
+def get_rental(rental_id):
+    output = []
+    mongoConnect = mongodb.MongoDb()
+    db = mongoConnect.getClient().unga
+    rental = db.rentals.find_one({"id": rental_id})
+    mongoConnect.getClient().close()
+
+    #for rental in rentals:
+        #output.append({'id': rental['id'], 'description': rental['description']})
+        #abort(404)
+
+    return jsonify({'id': rental['id'], 'type': rental['type'], 'description': rental['description'],
+                    'pictures': rental['pictures'], 'published' : rental['published']})
+
+#advert routes endpoint
 @app.route('/unga/api/v1.0/adverts/<advert_uuid>', methods=['GET'])
 def get_advert(advert_uuid):
     output = []
     mongoConnect = mongodb.MongoDb()
     db = mongoConnect.getClient().unga
     advert = db.adverts.find({"id": advert_uuid})
+    mongoConnect.getClient().close()
 
     for ad in advert:
         output.append({'id': ad['id'], 'message': ad['message']})
@@ -101,11 +134,13 @@ def get_adverts():
     mongoConnect = mongodb.MongoDb()
     db = mongoConnect.getClient().unga
     ads = db.adverts.find()
+    mongoConnect.getClient().close()
 
     for ad in ads:
         adverts.append({'id': ad['id'], 'message': ad['message']})
     return jsonify(adverts)
 
+#dummy data generation endpoint
 @app.route('/unga/api/v1.0/dummy', methods=['GET'])
 def create_dummy_data():
     fake = Faker()
@@ -113,18 +148,18 @@ def create_dummy_data():
     mongoConnect = mongodb.MongoDb()
     db = mongoConnect.getClient().unga
 
-    dummyPasswords = ['admin', 'admin123', 'district', 'district123', '1234']
-
     for i in range(0, 5):
         advert = models.Advert(fake.text())
         db.adverts.insert(advert.serialize())
         dummy.append(advert.serialize())
 
-        user = models.User(fake.name(), dummyPasswords[i], fake.email(), generate_password_hash(dummyPasswords[i]))
+        user = models.User(fake.name(), data.dummyPasswords[i], fake.email(), generate_password_hash(data.dummyPasswords[i]))
         db.users.insert(user.serialize())
         dummy.append(user.serialize())
 
-
+        rental = models.Rental(data.dummyRentalTypes[i], fake.text())
+        db.rentals.insert(rental.serialize())
+        dummy.append(rental.serialize())
 
     mongoConnect.getClient().close()
     return jsonify(dummy)

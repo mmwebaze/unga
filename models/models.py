@@ -97,7 +97,30 @@ class Advert(Model):
         }
 
 class Rental(Model):
+    __endpoint = 'rentals'
+    def __init__(self, type, description, pictures = []):
+        super().__init__()
+        self.id = str(uuid.uuid4())
+        self.description = description
+        self.type = type
+        self.pictures = pictures
+        self.uri = super(Rental, self).getBaseUri()
+        self.isPublished = False
 
-    @abstractmethod
-    def rentalPictures(self):
-        pass
+    def getDescription(self):
+
+        return self.description
+
+    def setPublished(self, isPublished):
+        self.isPublished = isPublished
+
+    def serialize(self):
+
+        return {
+            'id': self.id,
+            'description': self.description,
+            'type' : self.type,
+            'pictures' : self.pictures,
+            'published' : self.isPublished,
+            'uri': self.uri + self.__endpoint + "/" + self.id
+        }
