@@ -1,6 +1,7 @@
 #!flask/bin/python
 from flask import Flask, jsonify, request as req
 from models import models
+from flask_cors import CORS
 from faker import Faker
 from security import basicauthentication as bs
 from flask import make_response
@@ -10,7 +11,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 
 app = Flask(__name__)
-
+CORS(app)
 
 basicAuth = bs.HttpBasicAuth()
 auth = basicAuth.authenticate()
