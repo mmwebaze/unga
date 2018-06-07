@@ -6,11 +6,13 @@ from faker import Faker
 from security import basicauthentication as bs
 from flask import make_response
 from database import mongodb
+from util import util as ut
 from dummy import data
 from werkzeug.security import check_password_hash, generate_password_hash
 
 
 app = Flask(__name__)
+
 CORS(app)
 
 basicAuth = bs.HttpBasicAuth()
@@ -93,7 +95,7 @@ def get_rentals():
 
     for rental in rentals:
         output.append({'id': rental['_id'], 'type': rental['type'], 'description': rental['description'],
-                    'pictures': rental['pictures'], 'published' : rental['published']})
+                    'pictures': rental['pictures'], 'created': ut.timeToStr(rental['created']),'published' : rental['published']})
     return jsonify(output)
 
 @app.route('/unga/api/v1.0/rentals/<rental_id>', methods=['GET'])
@@ -105,7 +107,7 @@ def get_rental(rental_id):
     mongoConnect.getClient().close()
 
     return jsonify({'id': rental['_id'], 'type': rental['type'], 'description': rental['description'],
-                    'pictures': rental['pictures'], 'published' : rental['published']})
+                    'pictures': rental['pictures'], 'created': ut.timeToStr(rental['created']),'published' : rental['published']})
 
 #advert routes endpoint
 @app.route('/unga/api/v1.0/adverts/<advert_uuid>', methods=['GET'])
@@ -116,7 +118,7 @@ def get_advert(advert_uuid):
     advert = db.adverts.find_one({"_id": advert_uuid})
     mongoConnect.getClient().close()
 
-    return jsonify({'id': advert['_id'], 'message': advert['message']})
+    return jsonify({'id': advert['_id'], 'message': advert['message'], 'created': ut.timeToStr(advert['created']),'published': advert['published']})
 
 @app.route('/unga/api/v1.0/adverts', methods=['GET'])
 def get_adverts():
@@ -127,7 +129,7 @@ def get_adverts():
     mongoConnect.getClient().close()
 
     for ad in ads:
-        adverts.append({'id': ad['_id'], 'message': ad['message']})
+        adverts.append({'id': ad['_id'], 'message': ad['message'], 'created': ut.timeToStr(ad['created']),'published': ad['published']})
     return jsonify(adverts)
 
 #dummy data generation endpoint
