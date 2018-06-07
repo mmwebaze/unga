@@ -59,10 +59,10 @@ def address():
 def get_user(uid):
     mongoConnect = mongodb.MongoDb()
     db = mongoConnect.getClient().unga
-    user = db.users.find_one({"uid": uid})
+    user = db.users.find_one({"_id": uid})
     mongoConnect.getClient().close()
 
-    return jsonify({'first_name': user['first_name'], 'email': user['email'], 'uid' : user['uid']})
+    return jsonify({'first_name': user['first_name'], 'email': user['email'], 'uid' : user['_id']})
 
 @app.route('/unga/api/v1.0/users', methods=['GET'])
 def get_users():
@@ -77,7 +77,7 @@ def get_users():
             'href': user['uri'],
             'first_name': user['first_name'],
             'email': user['email'],
-            'uid' : user['uid']
+            'uid' : user['_id']
         })
 
     return jsonify({'users': output})
@@ -92,7 +92,8 @@ def get_rentals():
     mongoConnect.getClient().close()
 
     for rental in rentals:
-        output.append({'id': rental['id'], 'message': rental['message']})
+        output.append({'id': rental['_id'], 'type': rental['type'], 'description': rental['description'],
+                    'pictures': rental['pictures'], 'published' : rental['published']})
     return jsonify(output)
 
 @app.route('/unga/api/v1.0/rentals/<rental_id>', methods=['GET'])
@@ -100,10 +101,10 @@ def get_rental(rental_id):
     output = []
     mongoConnect = mongodb.MongoDb()
     db = mongoConnect.getClient().unga
-    rental = db.rentals.find_one({"id": rental_id})
+    rental = db.rentals.find_one({"_id": rental_id})
     mongoConnect.getClient().close()
 
-    return jsonify({'id': rental['id'], 'type': rental['type'], 'description': rental['description'],
+    return jsonify({'id': rental['_id'], 'type': rental['type'], 'description': rental['description'],
                     'pictures': rental['pictures'], 'published' : rental['published']})
 
 #advert routes endpoint
@@ -112,10 +113,10 @@ def get_advert(advert_uuid):
     output = []
     mongoConnect = mongodb.MongoDb()
     db = mongoConnect.getClient().unga
-    advert = db.adverts.find_one({"id": advert_uuid})
+    advert = db.adverts.find_one({"_id": advert_uuid})
     mongoConnect.getClient().close()
 
-    return jsonify({'id': advert['id'], 'message': advert['message']})
+    return jsonify({'id': advert['_id'], 'message': advert['message']})
 
 @app.route('/unga/api/v1.0/adverts', methods=['GET'])
 def get_adverts():
@@ -126,7 +127,7 @@ def get_adverts():
     mongoConnect.getClient().close()
 
     for ad in ads:
-        adverts.append({'id': ad['id'], 'message': ad['message']})
+        adverts.append({'id': ad['_id'], 'message': ad['message']})
     return jsonify(adverts)
 
 #dummy data generation endpoint

@@ -59,7 +59,7 @@ class User(Model):
     def serialize(self):
 
         return {
-            'uid': self.uid,
+            '_id': self.uid,
             'first_name': self.firstName,
             'last_name': self.lastName,
             'email': self.email,
@@ -91,7 +91,7 @@ class Advert(Model):
     def serialize(self):
 
         return {
-            'id': self.advertId,
+            '_id': self.advertId,
             'message': self.advertMessage,
             'uri': self.uri+self.__endpoint+"/"+self.advertId
         }
@@ -117,7 +117,7 @@ class Rental(Model):
     def serialize(self):
 
         return {
-            'id': self.id,
+            '_id': self.id,
             'description': self.description,
             'type' : self.type,
             'pictures' : self.pictures,
