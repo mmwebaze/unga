@@ -1,5 +1,5 @@
 #!flask/bin/python
-from flask import Flask, jsonify, request as req
+from flask import Flask, jsonify, request
 from models import models
 from flask_cors import CORS
 from faker import Faker
@@ -57,6 +57,20 @@ def address():
     r.headers['content-type'],
     )
 '''
+@app.route('/unga/api/v1.0/user', methods=['POST'])
+def add_user():
+    #Need to check password_1 == password_2
+
+    user = models.User(request.json['fname'], request.json['lname'], request.json['email'],
+                       generate_password_hash(request.json['password_1']))
+
+    mongoConnect = mongodb.MongoDb()
+    db = mongoConnect.getClient().unga
+    db.users.insert(user.serialize())
+    mongoConnect.getClient().close()
+
+    return jsonify({"user": "User with uid "+user.getUid()+" created"})
+
 @app.route('/unga/api/v1.0/users/<uid>', methods=['GET'])
 def get_user(uid):
     mongoConnect = mongodb.MongoDb()

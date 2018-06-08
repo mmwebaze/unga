@@ -62,6 +62,10 @@ class User(Model):
 
         self.telephone = telephone
 
+    def getUid(self):
+
+        return self.uid
+
     def serialize(self):
 
         return {
