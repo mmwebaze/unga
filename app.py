@@ -1,6 +1,6 @@
 #!flask/bin/python
 from flask import Flask, jsonify, request
-from models import models
+from models import advert as ad, user as u, product as prod
 from flask_cors import CORS
 from faker import Faker
 from security import basicauthentication as bs
@@ -9,11 +9,17 @@ from database import mongodb
 from util import util as ut
 from dummy import data
 from werkzeug.security import check_password_hash, generate_password_hash
+import jwt
+import datetime
+from functools import wraps
+
 
 
 app = Flask(__name__)
 
-CORS(app)
+app.config.from_pyfile('config.py')
+
+CORS(app, resources={r"/unga/api/*": {"origins": "*"}})
 
 basicAuth = bs.HttpBasicAuth()
 auth = basicAuth.authenticate()
@@ -37,31 +43,37 @@ def verify_password(username, password):
 def unauthorized():
     return make_response(jsonify({'error': 'Unauthorized access'}), 401)
 
-@app.route('/')
-@auth.login_required
-def index():
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = request.args.get('token')
 
+        if not token:
+
+            return jsonify({'Message' : 'Token is missing'}), 401
+
+        try:
+            validate_token = jwt.decode(token, app.config['SECRET_KEY'])
+        except:
+            return jsonify({'Message' : 'Token is invalid'}), 401
+
+        return f(*args, **kwargs)
+    return decorated
+
+@app.route('/unga/api/resources')
+@auth.login_required
+def login():
+    token = jwt.encode({'user': request.authorization.username, 'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=5)}, app.config['SECRET_KEY'])
+    print(request.authorization.username)
 
     #user = models.User('Michael', 'Mwebaze', 'mail@example.com')
-    return jsonify({"message": "logged in"})
+    return jsonify({"token": token.decode('UTF-8')})
 
-'''@app.route('/address')
-def address():
-    user = req.args.get('address')
-
-    r = requests.get("https://nominatim.openstreetmap.org/search.php?q="+user+"&polygon_geojson")
-    #return jsonify(r)
-    return jsonify(
-        r.text,
-    r.status_code,
-    r.headers['content-type'],
-    )
-'''
 @app.route('/unga/api/v1.0/user', methods=['POST'])
 def add_user():
     #Need to check password_1 == password_2
 
-    user = models.User(request.json['fname'], request.json['lname'], request.json['email'],
+    user = u.User(request.json['fname'], request.json['lname'], request.json['email'],
                        generate_password_hash(request.json['password_1']))
 
     mongoConnect = mongodb.MongoDb()
@@ -99,29 +111,44 @@ def get_users():
     return jsonify({'users': output})
 
 #Rentals endpoints
-@app.route('/unga/api/v1.0/rentals', methods=['GET'])
-def get_rentals():
+@app.route('/unga/api/v1.0/products', methods=['GET'])
+@token_required
+def get_products():
     output = []
     mongoConnect = mongodb.MongoDb()
     db = mongoConnect.getClient().unga
-    rentals = db.rentals.find()
+    products = db.products.find()
     mongoConnect.getClient().close()
 
-    for rental in rentals:
-        output.append({'id': rental['_id'], 'type': rental['type'], 'description': rental['description'],
-                    'pictures': rental['pictures'], 'created': ut.timeToStr(rental['created']),'published' : rental['published']})
+    for product in products:
+        output.append({'id': product['_id'], 'type': product['type'], 'description': product['description'],
+                    'pictures': product['pictures'], 'created': ut.timeToStr(product['created']),'published' : product['published']})
     return jsonify(output)
 
-@app.route('/unga/api/v1.0/rentals/<rental_id>', methods=['GET'])
-def get_rental(rental_id):
-    output = []
+@app.route('/unga/api/v1.0/products/<product_id>', methods=['GET'])
+def get_product(product_id):
     mongoConnect = mongodb.MongoDb()
     db = mongoConnect.getClient().unga
-    rental = db.rentals.find_one({"_id": rental_id})
+    product = db.products.find_one({"_id": product_id})
     mongoConnect.getClient().close()
 
-    return jsonify({'id': rental['_id'], 'type': rental['type'], 'description': rental['description'],
-                    'pictures': rental['pictures'], 'created': ut.timeToStr(rental['created']),'published' : rental['published']})
+    return jsonify({'id': product['_id'], 'type': product['type'], 'description': product['description'],
+                    'pictures': product['pictures'], 'created': ut.timeToStr(product['created']),'published' : product['published']})
+
+@app.route('/unga/api/v1.0/category/<category_id>', methods=['GET'])
+def get_products_by_category(category_id):
+    output = []
+    print(category_id)
+    mongoConnect = mongodb.MongoDb()
+    db = mongoConnect.getClient().unga
+    products = db.products.find({"type": category_id})
+    mongoConnect.getClient().close()
+
+
+    for product in products:
+        output.append({'id': product['_id'], 'type': product['type'], 'description': product['description'],
+                        'pictures': product['pictures'], 'created': ut.timeToStr(product['created']),'published' : product['published']})
+    return jsonify(output)
 
 #advert routes endpoint
 @app.route('/unga/api/v1.0/adverts/<advert_uuid>', methods=['GET'])
@@ -134,7 +161,8 @@ def get_advert(advert_uuid):
 
     return jsonify({'id': advert['_id'], 'message': advert['message'], 'created': ut.timeToStr(advert['created']),'published': advert['published']})
 
-@app.route('/unga/api/v1.0/adverts', methods=['GET'])
+@app.route('/unga/api/v1.0/adverts', methods=['GET', 'OPTIONS'])
+#@crossdomain(origin='*')
 def get_adverts():
     adverts = []
     mongoConnect = mongodb.MongoDb()
@@ -155,20 +183,20 @@ def create_dummy_data():
     db = mongoConnect.getClient().unga
 
     for i in range(0, 5):
-        advert = models.Advert(fake.text())
+        advert = ad.Advert(fake.text())
         db.adverts.insert(advert.serialize())
         dummy.append(advert.serialize())
 
-        user = models.User(fake.name(), data.dummyPasswords[i], fake.email(), generate_password_hash(data.dummyPasswords[i]))
+        user = u.User(fake.name(), data.dummyPasswords[i], fake.email(), generate_password_hash(data.dummyPasswords[i]))
         db.users.insert(user.serialize())
         dummy.append(user.serialize())
 
-        rental = models.Rental(data.dummyRentalTypes[i], fake.text())
-        db.rentals.insert(rental.serialize())
-        dummy.append(rental.serialize())
+        product = prod.Product(data.dummyRentalTypes[i], fake.text())
+        db.products.insert(product.serialize())
+        dummy.append(product.serialize())
 
     mongoConnect.getClient().close()
     return jsonify(dummy)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()
